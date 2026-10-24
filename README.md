@@ -58,7 +58,6 @@ Some antivirus tools are wary of unsigned `.exe` files compiled from AutoHotkey.
 FABconfig_v26_10_24.ahk   The program
 Resources/                VBS logo files (not covered by the GPL, see below)
   VBS_Logo.ico            Window, taskbar and .exe icon
-  VBS_Logo.png            Logo image (256 × 256)
   VBS_Logo_Badge.png      Logo shown in the sidebar
 LICENSE                   GNU General Public License v3
 README.md                 This file
