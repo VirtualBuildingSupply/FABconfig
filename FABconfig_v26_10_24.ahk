@@ -95,7 +95,7 @@ LOGO_BADGE := A_ScriptDir "\Resources\VBS_Logo_Badge.png"
 
 ABOUT_TEXT := "
 (
-FABconfig adds the Fabrication database in this folder to Autodesk Fabrication (CADmep, ESTmep, CAMduct) as a configuration you can choose when the program starts. Run it from inside the database folder, or choose the database folder when it asks.
+FABconfig adds the Fabrication database in this folder to Autodesk Fabrication (Revit, CADmep, ESTmep, CAMduct) as a configuration you can choose when the program starts. Run it from inside the database folder, or choose the database folder when it asks.
 
 The map.ini it writes points the Database, Items, Images, Profiles, Reports and Scripts folders at this database. Projects, DXFs, Blocks and Backups stay in the configuration folder, so local work stays separate from the shared database.
 
@@ -530,10 +530,7 @@ IsDatabaseFolder(dir) => FileExist(dir "\map.ini") || DirExist(dir "\DATABASE")
 
 ChooseDatabase(*) {
     start := DB_DIR != "" ? "*" DB_DIR : ""
-    if (DB_DIR = "")
-        prompt := "Select a folder that contains a Fabrication database:"
-    else
-        prompt := "Select the Fabrication database folder:"
+    prompt := "Select a folder that contains a Fabrication database"
     Loop {
         sel := DirSelect(start, 0, prompt)
         if (sel = "")                  ; cancelled
@@ -543,7 +540,7 @@ ChooseDatabase(*) {
             SetDatabase(sel)
             return true
         }
-        if MsgBox("Select a folder that contains a Fabrication database:`n"
+        if MsgBox("This folder doesn't look like a Fabrication database (it has no map.ini or DATABASE folder):`n"
                 . sel "`n`nChoose a different folder?", APP_NAME, "RetryCancel Icon!") != "Retry"
             return false
         start := "*" sel
