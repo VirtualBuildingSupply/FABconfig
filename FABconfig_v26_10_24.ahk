@@ -58,9 +58,11 @@ YEAR_FROM := A_YYYY - 4
 YEAR_TO   := A_YYYY + 2
 
 ; The database is the folder this script is run from.
-DB_DIR  := A_ScriptDir
+; If there's no map.ini here, FABconfig asks for the database folder at start-up.
+DB_DIR  := FileExist(A_ScriptDir "\map.ini") ? A_ScriptDir : ""
 DB_PATH := StrReplace(DB_DIR, "\", "/")   ; map.ini uses forward slashes
-DB_NAME := IniRead(DB_DIR "\map.ini", "COMPANY-INFO", "DBNAME", "")
+DB_NAME := DB_DIR != "" ? IniRead(DB_DIR "\map.ini", "COMPANY-INFO", "DBNAME", "") : ""
+NO_DB_TEXT := "No database selected. Click Browse to choose one."
 
 ;======================= VBS brand palette ==========================
 ; Greens and grays come from VBS_Logo.svg. The darker shades are used for
@@ -93,7 +95,7 @@ LOGO_BADGE := A_ScriptDir "\Resources\VBS_Logo_Badge.png"
 
 ABOUT_TEXT := "
 (
-FABconfig adds the Fabrication database in this folder to Autodesk Fabrication (CADmep, ESTmep, CAMduct) as a configuration you can choose when the program starts. Run it from inside the database folder.
+FABconfig adds the Fabrication database in this folder to Autodesk Fabrication (CADmep, ESTmep, CAMduct) as a configuration you can choose when the program starts. Run it from inside the database folder, or choose the database folder when it asks.
 
 The map.ini it writes points the Database, Items, Images, Profiles, Reports and Scripts folders at this database. Projects, DXFs, Blocks and Backups stay in the configuration folder, so local work stays separate from the shared database.
 
@@ -138,6 +140,7 @@ g.BackColor := CLR_PAGE
 g.OnEvent("Close",  (*) => ExitApp())
 g.OnEvent("Escape", OnEscape)
 g.OnEvent("Size",   OnResize)
+g.Opt("+OwnDialogs")   ; folder pickers and messages stay on top of this window
 OnMessage(0x200, OnMouseMove)    ; WM_MOUSEMOVE: hover effects
 OnMessage(0x20,  OnSetCursor)    ; WM_SETCURSOR: hand cursor on clickable items
 
@@ -176,8 +179,9 @@ ctl.LocLbl := AddCtl("Text", "Background" CLR_CARD, "Configuration location")
 fLoc := MakeField(DB_NAME != "" ? CONFIG_ROOT "\" DB_NAME : "")
 btnBrowse := MakeButton(0xE838, "Browse", CLR_GREEN_TINT, CLR_GREEN_TINT2, CLR_GREEN_DARK, BrowseLocation)
 SetF("s9 c" CLR_MUTED)
-ctl.DbLbl := AddCtl("Text", "Background" CLR_CARD, "Database folder (where FABconfig is running)")
-fDb := MakeField(DB_DIR, true)
+ctl.DbLbl := AddCtl("Text", "Background" CLR_CARD, "Fabrication database folder")
+fDb := MakeField(DB_DIR != "" ? DB_DIR : NO_DB_TEXT, true)
+btnDb := MakeButton(0xE838, "Browse", CLR_GREEN_TINT, CLR_GREEN_TINT2, CLR_GREEN_DARK, ChooseDatabase)
 btnCreate := MakeButton(0xE710, "Create Configuration", CLR_GREEN_DARK, CLR_GREEN_HOVER, "FFFFFF", SaveConfig)
 mainCtrls.Push(ctl.Card, ctl.CardTitle, ctl.NameLbl, ctl.LocLbl, ctl.DbLbl)
 
@@ -239,6 +243,8 @@ ShowView("main")
 Layout(winW, winH)
 g.Show("w" winW " h" winH)
 ctl.Name.Focus()
+if (DB_DIR = "")
+    ChooseDatabase()
 return
 
 ;======================= Building blocks ============================
@@ -435,7 +441,8 @@ Layout(w, h) {
     PlaceButton(btnBrowse, ix + iw - bw, y + 22, bw, 38)
     y += 76
     M(ctl.DbLbl, ix, y, iw, 18)
-    PlaceField(fDb, ix, y + 22, iw)
+    PlaceField(fDb, ix, y + 22, iw - bw - 8)
+    PlaceButton(btnDb, ix + iw - bw, y + 22, bw, 38)
     by := top + colH - 22 - 40          ; buttons along the bottom of the card
     PlaceButton(btnCreate, ix + iw - 220, by, 220, 40)
 
@@ -517,6 +524,43 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
     }
 }
 
+;======================= Database folder ============================
+; A folder counts as a Fabrication database if it has a map.ini or a DATABASE folder.
+IsDatabaseFolder(dir) => FileExist(dir "\map.ini") || DirExist(dir "\DATABASE")
+
+ChooseDatabase(*) {
+    start := DB_DIR != "" ? "*" DB_DIR : ""
+    if (DB_DIR = "")
+        prompt := "Select a folder that contains a Fabrication database:"
+    else
+        prompt := "Select the Fabrication database folder:"
+    Loop {
+        sel := DirSelect(start, 0, prompt)
+        if (sel = "")                  ; cancelled
+            return false
+        sel := RTrim(sel, "\")
+        if IsDatabaseFolder(sel) {
+            SetDatabase(sel)
+            return true
+        }
+        if MsgBox("Select a folder that contains a Fabrication database:`n"
+                . sel "`n`nChoose a different folder?", APP_NAME, "RetryCancel Icon!") != "Retry"
+            return false
+        start := "*" sel
+    }
+}
+
+SetDatabase(dir) {
+    global DB_DIR := dir, DB_PATH := StrReplace(dir, "\", "/")
+    global DB_NAME := IniRead(dir "\map.ini", "COMPANY-INFO", "DBNAME", "")
+    fDb.Edit.Text := dir
+    ; Fill in the name from the database, unless the user already typed one.
+    if (Trim(ctl.Name.Value) = "" && DB_NAME != "") {
+        ctl.Name.Value := DB_NAME
+        OnNameChange()
+    }
+}
+
 ;======================= Inputs =====================================
 ; Keep the location in step with the name until the user picks their own.
 OnNameChange(*) {
@@ -551,6 +595,12 @@ SaveConfig(*) {
     dir  := RTrim(Trim(ctl.Loc.Value), "\")
 
     ; ---- Validate ----
+    if (DB_DIR = "") {
+        MsgBox("Choose the Fabrication database folder first.", APP_NAME, "Iconi")
+        ShowView("main")
+        ChooseDatabase()
+        return
+    }
     if (name = "")
         return Fail(ctl.Name, "Enter a configuration name.")
     if RegExMatch(name, '[\\/:*?"<>|]')
