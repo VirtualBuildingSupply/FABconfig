@@ -14,7 +14,7 @@ No administrator rights are needed. FABconfig writes only to the current user's 
 
 ## How to use it
 
-1. Copy `FabConfig_v26_10_24.ahk` (or the compiled `.exe`) and the `Resources` folder into the root folder of the Fabrication database.
+1. Copy `FABconfig_v26_10_24.ahk` (or the compiled `.exe`) and the `Resources` folder into the root folder of the Fabrication database.
 2. Run it. The configuration name is filled in from `DBNAME` in the `[COMPANY-INFO]` section of the database's `map.ini`, if there is one.
 3. Check the name and location, then click **Create Configuration** (or press Enter).
 4. Start Fabrication. The new configuration appears in the configuration list.
@@ -55,7 +55,7 @@ Some antivirus tools are wary of unsigned `.exe` files compiled from AutoHotkey.
 ## Repository layout
 
 ```
-FabConfig_v26_10_24.ahk   The program
+FABconfig_v26_10_24.ahk   The program
 Resources/                VBS logo files (not covered by the GPL, see below)
   VBS_Logo.ico            Window, taskbar and .exe icon
   VBS_Logo_Badge.png      Logo shown in the sidebar
