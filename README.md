@@ -14,7 +14,7 @@ No administrator rights are needed. FABconfig writes only to the current user's 
 
 ## How to use it
 
-1. Copy `FABconfig.ahk` (or the compiled `.exe`) and the `Resources` folder into the root folder of the Fabrication database, next to its `map.ini`. You can also run FABconfig from anywhere else: if there's no `map.ini` in its folder, it asks you to choose the database folder when it starts.
+1. Copy the compiled `.exe` (or `FABconfig.ahk` together with the `Resources` folder) into the root folder of the Fabrication database, next to its `map.ini`. You can also run FABconfig from anywhere else: if there's no `map.ini` in its folder, it asks you to choose the database folder when it starts.
 2. The configuration name is filled in from `DBNAME` in the `[COMPANY-INFO]` section of the database's `map.ini`, if there is one. If there isn't, type a name; the location still starts at `C:\fabrication-configurations\` and follows the name.
 3. Check the name, location and database folder, then click **Create Configuration** (or press Enter). Use the **Browse** button beside the database folder to pick a different database.
 4. Start Fabrication. The new configuration appears in the configuration list.
@@ -45,11 +45,11 @@ To remove a configuration by hand, delete its `Configuration\<name>` key under e
 
 ## Building the .exe
 
-1. Make sure the `Resources` folder sits next to the script. The compiler uses `Resources\VBS_Logo.ico` as the `.exe` icon.
+1. Make sure the `Resources` folder sits next to the script. The compiler builds `Resources\VBS_Logo.ico` (the `.exe` icon) and `Resources\VBS_Logo_Badge.png` (the sidebar logo) into the `.exe`.
 2. Right-click the script and choose **Compile Script**. If that option isn't there, open **AutoHotkey Dash** and choose **Compile**, which installs the compiler (Ahk2Exe) the first time.
 3. Choose a **v2** base file (for example `AutoHotkey64.exe`) and click **Convert**.
 
-The compiled file is named after the version, for example `FABconfig_v26.10.24.exe`, and is saved next to the script. The icon, version and copyright details come from the `;@Ahk2Exe-` lines in the script; the version is copied from `APP_VERSION`, so there's nothing else to update. These lines need a recent version of Ahk2Exe. The sidebar logo is loaded from the `Resources` folder at runtime, so keep that folder next to the `.exe`. If it's missing, FABconfig shows a plain folder icon instead.
+The compiled file is named after the version, for example `FABconfig_v26.10.24.exe`, and is saved next to the script. The icon, version and copyright details come from the `;@Ahk2Exe-` lines in the script; the version is copied from `APP_VERSION`, so there's nothing else to update. These lines need a recent version of Ahk2Exe. Both logos are inside the `.exe`, so it runs on its own without the `Resources` folder. The script (`.ahk`) reads them from the `Resources` folder instead, and shows plain icons if it's missing.
 
 Some antivirus tools are wary of unsigned `.exe` files compiled from AutoHotkey. Signing the `.exe` with a code-signing certificate avoids this.
 
@@ -62,7 +62,7 @@ The script keeps the same file name from version to version; past versions are i
 1. Set `APP_VERSION` near the top of `FABconfig.ahk`. This is the only place the version is written.
 2. Move the **Unreleased** notes in [CHANGELOG.md](CHANGELOG.md) under a heading for the new version.
 3. Compile the `.exe` (see above), commit, and tag the commit with the version: `git tag v26.10.24`, then `git push --tags`.
-4. Create a GitHub release from the tag, paste in its changelog notes, and attach the `.exe` and a zip of the `Resources` folder.
+4. Create a GitHub release from the tag, paste in its changelog notes, and attach the `.exe`.
 
 ## Repository layout
 
@@ -89,6 +89,6 @@ FABconfig is free software: you can redistribute it and/or modify it under the t
 Additional terms under section 7 of the GPL v3, also stated in the script's header:
 
 - **Attribution (section 7b):** The copyright notice and author attribution in the script's header must be preserved in that file and in any modified version of it.
-- **Trademarks (section 7e):** The license grants no rights to use the trade names, trademarks or logos of Virtual Building Supply, LLC, including the logo files in the `Resources` folder. If you distribute a modified version, replace those files with your own (or remove them) and change the program's branding. FABconfig runs without them; to compile without an icon, remove the `;@Ahk2Exe-SetMainIcon` line.
+- **Trademarks (section 7e):** The license grants no rights to use the trade names, trademarks or logos of Virtual Building Supply, LLC, including the logo files in the `Resources` folder. If you distribute a modified version, replace those files with your own (or remove them) and change the program's branding. FABconfig runs without them; to compile without the logos, remove the `;@Ahk2Exe-SetMainIcon` and `;@Ahk2Exe-AddResource` lines.
 
 Autodesk, Revit, Fabrication, CADmep, ESTmep and CAMduct are registered trademarks or trademarks of Autodesk, Inc. FABconfig is not affiliated with, endorsed by or supported by Autodesk.

@@ -9,6 +9,8 @@ What changed in each version of FABconfig. Versions are dates (`vYY.MM.DD`); see
 - An overwritten `map.ini` is kept as `map.ini.bak`.
 - An overwrite also updates the configuration in any other Fabrication version it was registered with, not just the versions shown under "Registers with".
 
+- The compiled `.exe` has the sidebar logo built in, so it no longer needs the `Resources` folder next to it.
+
 ### Changed
 - The configuration location can't be inside the database folder. (Tools that mirror the database, such as `robocopy /MIR`, would delete it.)
 - A configuration folder (one whose `map.ini` points to a database somewhere else) is no longer accepted as a database folder.

@@ -100,9 +100,12 @@ FONT      := "Segoe UI"
 FONT_SEMI := "Segoe UI Semibold"
 ICON_FONT := "Segoe MDL2 Assets"   ; built into Windows 10 and 11
 
-; Logo files live in a Resources folder next to the script (or the .exe).
+; Logo files live in a Resources folder next to the script. The compiled .exe
+; has both built in (the icon through SetMainIcon, the badge below), so it
+; doesn't need the folder.
 LOGO_ICO   := A_ScriptDir "\Resources\VBS_Logo.ico"
 LOGO_BADGE := A_ScriptDir "\Resources\VBS_Logo_Badge.png"
+;@Ahk2Exe-AddResource Resources\VBS_Logo_Badge.png, VBS_LOGO_BADGE
 
 ABOUT_TEXT := "
 (
@@ -157,7 +160,10 @@ OnMessage(0x20,  OnSetCursor)    ; WM_SETCURSOR: hand cursor on clickable items
 
 ; ---- Sidebar ----
 ctl.Side := AddCtl("Text", "Background" CLR_SIDEBAR)
-if FileExist(LOGO_BADGE) {
+badgeBmp := A_IsCompiled ? LoadPngResource("VBS_LOGO_BADGE", S(64)) : 0
+if badgeBmp {
+    ctl.Badge := AddCtl("Picture", "w" S(64) " h" S(64), "HBITMAP:" badgeBmp)
+} else if FileExist(LOGO_BADGE) {
     ctl.Badge := AddCtl("Picture", "w" S(64) " h" S(64), LOGO_BADGE)
 } else {
     SetF("s22 c" CLR_GREEN_DARK, ICON_FONT)
@@ -364,6 +370,42 @@ FieldFocus(f, on) {
     RedrawCtl(f.Border)
     RedrawCtl(f.Fill)
     RedrawCtl(f.Edit)
+}
+
+; Loads a PNG built into the compiled .exe (AddResource stores it as RT_RCDATA)
+; and scales it to size x size pixels with GDI+. Returns an HBITMAP, or 0.
+LoadPngResource(name, size) {
+    hMod := DllCall("GetModuleHandle", "ptr", 0, "ptr")
+    hRes := DllCall("FindResource", "ptr", hMod, "str", name, "ptr", 10, "ptr")   ; 10 = RT_RCDATA
+    if !hRes
+        return 0
+    bytes := DllCall("SizeofResource", "ptr", hMod, "ptr", hRes, "uint")
+    pData := DllCall("LockResource", "ptr", DllCall("LoadResource", "ptr", hMod, "ptr", hRes, "ptr"), "ptr")
+    stream := DllCall("shlwapi\SHCreateMemStream", "ptr", pData, "uint", bytes, "ptr")
+    if !stream
+        return 0
+
+    DllCall("LoadLibrary", "str", "gdiplus")
+    si := Buffer(24, 0), NumPut("uint", 1, si)                ; GdiplusStartupInput, version 1
+    DllCall("gdiplus\GdiplusStartup", "ptr*", &token := 0, "ptr", si, "ptr", 0)
+    hbm := 0
+    DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &src := 0)
+    if src {
+        ; Draw onto a size x size bitmap with high-quality scaling (the logo is
+        ; 256 px), then convert it with a white background (the badge is on white).
+        DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", size, "int", size, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &dst := 0)   ; 32bppARGB
+        DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", dst, "ptr*", &gfx := 0)
+        DllCall("gdiplus\GdipSetInterpolationMode", "ptr", gfx, "int", 7)      ; HighQualityBicubic
+        DllCall("gdiplus\GdipSetPixelOffsetMode", "ptr", gfx, "int", 4)        ; HighQuality
+        DllCall("gdiplus\GdipDrawImageRectI", "ptr", gfx, "ptr", src, "int", 0, "int", 0, "int", size, "int", size)
+        DllCall("gdiplus\GdipDeleteGraphics", "ptr", gfx)
+        DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", dst, "ptr*", &hbm, "uint", 0xFFFFFFFF)
+        DllCall("gdiplus\GdipDisposeImage", "ptr", dst)
+        DllCall("gdiplus\GdipDisposeImage", "ptr", src)
+    }
+    ObjRelease(stream)
+    DllCall("gdiplus\GdiplusShutdown", "ptr", token)
+    return hbm
 }
 
 ;======================= Layout =====================================

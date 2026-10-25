@@ -8,7 +8,7 @@ Owner and developer: Scott Hendricks, Virtual Building Supply, LLC (VBS). Licens
 
 - `FABconfig.ahk` — the whole program (single file). The file name never changes between versions.
 - `CHANGELOG.md` — notes per version; new changes go under **Unreleased**.
-- `Resources/VBS_Logo.ico` — window/tray/.exe icon. `Resources/VBS_Logo_Badge.png` — sidebar logo (logo on white, rounded via a window region). Both optional at runtime; the script falls back to a shell32 icon / MDL2 glyph.
+- `Resources/VBS_Logo.ico` — window/tray/.exe icon. `Resources/VBS_Logo_Badge.png` — sidebar logo (logo on white, rounded via a window region). Both optional at runtime; the script falls back to a shell32 icon / MDL2 glyph. The compiled .exe has both built in (`SetMainIcon`, and `AddResource` as RCDATA `VBS_LOGO_BADGE`, loaded by `LoadPngResource()` through GDI+), so it doesn't need the folder. Don't paste the logos into the .ahk itself: GPL section 7(e) keeps them separate from the GPL'd source.
 - `README.md`, `LICENSE` (verbatim GPL v3, do not edit).
 
 Related tools that live outside this repo and share the same building blocks and palette: FABclean (removes configurations FABconfig made, identified by the `# Created by Virtual Building Supply` first line of map.ini; internal testing tool only, not given to users, so it may delete whole configuration folders including `map.ini.bak`) and FABsync2 (robocopy /MIR master → working database).
