@@ -14,10 +14,16 @@ No administrator rights are needed. FABconfig writes only to the current user's 
 
 ## How to use it
 
-1. Copy the compiled `.exe` (or `FABconfig.ahk` together with the `Resources` folder) into the root folder of the Fabrication database, next to its `map.ini`. You can also run FABconfig from anywhere else: if there's no `map.ini` in its folder, it asks you to choose the database folder when it starts.
-2. The configuration name is filled in from `DBNAME` in the `[COMPANY-INFO]` section of the database's `map.ini`, if there is one. If there isn't, type a name; the location still starts at `C:\fabrication-configurations\` and follows the name.
-3. Check the name, location and database folder, then click **Create Configuration** (or press Enter). Use the **Browse** button beside the database folder to pick a different database.
-4. Start Fabrication. The new configuration appears in the configuration list.
+1. **Give the database a name (once per database).** Open the database's `map.ini` in Notepad. If it doesn't have a `[COMPANY-INFO]` section, add these lines at the end, put in your database's name, and save:
+   ```ini
+   [COMPANY-INFO]
+   DBNAME=Your database name
+   ```
+   Autodesk Fabrication doesn't add this section; Virtual Building Supply adds it when building a database, so databases from VBS already have it. FABconfig uses it to fill in the configuration name for everyone who sets up this database. The name can't contain `\ / : * ? " < > |`. This step is optional: without it, each user types a name instead.
+2. Copy the compiled `.exe` (or `FABconfig.ahk` together with the `Resources` folder) into the root folder of the Fabrication database, next to its `map.ini`. You can also run FABconfig from anywhere else: if there's no `map.ini` in its folder, it asks you to choose the database folder when it starts.
+3. The configuration name is filled in from `DBNAME` in the `[COMPANY-INFO]` section of the database's `map.ini`, if there is one. If there isn't, type a name; the location still starts at `C:\fabrication-configurations\` and follows the name.
+4. Check the name, location and database folder, then click **Create Configuration** (or press Enter). Use the **Browse** button beside the database folder to pick a different database.
+5. Start Fabrication. The new configuration appears in the configuration list.
 
 The **What's this?** page in the sidebar explains each step inside the program. Esc returns from that page, or closes the program from the main page.
 
