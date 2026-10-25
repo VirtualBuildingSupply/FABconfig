@@ -57,8 +57,8 @@ APP_VERSION := "v26.10.24"
 ;@Ahk2Exe-ExeName FABconfig_v%U_version%.exe
 WIN_TITLE   := "FABconfig - Add Fabrication Configuration"
 CONFIG_ROOT := "C:\fabrication-configurations"
-; FABconfig marks the map.ini it writes with this first line (FABclean uses it
-; too). VBS databases' own map.ini files start with it as well.
+; FABconfig marks the map.ini it writes with this first line. VBS databases'
+; own map.ini files start with it as well.
 MAP_MARKER  := "# Created by Virtual Building Supply"
 
 ; Fabrication versions to register the configuration with: 4 years back to

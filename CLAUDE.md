@@ -11,14 +11,12 @@ Owner and developer: Scott Hendricks, Virtual Building Supply, LLC (VBS). Licens
 - `Resources/VBS_Logo.ico` — window/tray/.exe icon. `Resources/VBS_Logo_Badge.png` — sidebar logo (logo on white, rounded via a window region). Both optional at runtime; the script falls back to a shell32 icon / MDL2 glyph. The compiled .exe has both built in (`SetMainIcon`, and `AddResource` as RCDATA `VBS_LOGO_BADGE`, loaded by `LoadPngResource()` through GDI+), so it doesn't need the folder. Don't paste the logos into the .ahk itself: GPL section 7(e) keeps them separate from the GPL'd source.
 - `README.md`, `LICENSE` (verbatim GPL v3, do not edit).
 
-Related tools that live outside this repo and share the same building blocks and palette: FABclean (removes configurations FABconfig made, identified by the `# Created by Virtual Building Supply` first line of map.ini; internal testing tool only, not given to users, so it may delete whole configuration folders including `map.ini.bak`) and FABsync2 (robocopy /MIR master → working database).
-
 ## Running and checking
 
 - Requires AutoHotkey v2 on Windows 10/11. Run: `AutoHotkey64.exe FABconfig.ahk`.
 - Load/syntax errors: `AutoHotkey64.exe /ErrorStdOut FABconfig.ahk` prints errors to stdout instead of a dialog.
 - Compile: Ahk2Exe with a v2 base; metadata comes from the `;@Ahk2Exe-` lines (escape commas as `` `, ``). The output is `FABconfig_v<version>.exe` next to the script.
-- There are no automated tests. Test FABconfig with a throwaway configuration name and clean up afterwards (delete the registry keys and the folder, or use FABclean).
+- There are no automated tests. Test FABconfig with a throwaway configuration name and clean up afterwards (delete the registry keys and the folder).
 
 ## Code conventions
 
@@ -37,7 +35,7 @@ Related tools that live outside this repo and share the same building blocks and
 - **DPI:** the Gui uses `-DPIScale`; all layout is written in 100%-scale units and converted with `S(n)`. `M(ctrl, x, y, w, h, r)` moves a control in those units and rounds corners with `SetWindowRgn` when `r` is given. `Layout()` works in `W := w / SCALE` units.
 - Repaint controls with `RedrawCtl()` (RedrawWindow), not `GuiCtrl.Redraw()`.
 - Avoid multi-line ternaries (lines starting with `?` / `:`); use if/else.
-- When editing with scripted find/replace, make sure a replacement doesn't split a comment line onto code (an earlier edit left `(same positions as FABsync)` after a statement and broke the script).
+- When editing with scripted find/replace, make sure a replacement doesn't split a comment line onto code (an earlier edit left the tail of a comment after a statement and broke the script).
 
 ## Databases vs. configuration folders
 

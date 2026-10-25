@@ -10,3 +10,6 @@ desktop.ini
 *.zip
 *.bak
 /map.ini
+
+# Claude Code local notes
+CLAUDE.local.md
