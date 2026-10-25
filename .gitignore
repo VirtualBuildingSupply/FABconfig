@@ -4,3 +4,9 @@
 # Windows
 Thumbs.db
 desktop.ini
+
+# Build output and local test files
+*.exe
+*.zip
+*.bak
+/map.ini

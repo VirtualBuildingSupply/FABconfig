@@ -4,7 +4,6 @@
 ;@Ahk2Exe-SetMainIcon Resources\VBS_Logo.ico
 ;@Ahk2Exe-SetProductName FABconfig
 ;@Ahk2Exe-SetDescription FABconfig - Add Fabrication Configuration
-;@Ahk2Exe-SetVersion 26.10.24.0
 ;@Ahk2Exe-SetCompanyName Virtual Building Supply`, LLC
 ;@Ahk2Exe-SetCopyright Copyright (C) 2026 Virtual Building Supply`, LLC. GNU GPL v3.
 
@@ -41,16 +40,26 @@
  *      the Resources folder. Modified versions that are distributed must
  *      replace them.
  *
- * Version: 26.10.24 (AutoHotkey v2)
+ * Version: see APP_VERSION below (AutoHotkey v2)
  *
  * ---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
  */
 
 ;======================= Configuration ==============================
 APP_NAME    := "FABconfig"
+; The version lives only here. The Ahk2Exe lines below copy it (without the
+; "v") into the .exe's version details and name, so they must stay directly
+; after this line. A second release on the same day adds a fourth number,
+; like "v26.10.24.1".
 APP_VERSION := "v26.10.24"
+;@Ahk2Exe-Let U_version = %A_PriorLine~^.*"v([\d.]+)".*$~$1%
+;@Ahk2Exe-SetVersion %U_version%
+;@Ahk2Exe-ExeName FABconfig_v%U_version%.exe
 WIN_TITLE   := "FABconfig - Add Fabrication Configuration"
 CONFIG_ROOT := "C:\fabrication-configurations"
+; FABconfig marks the map.ini it writes with this first line (FABclean uses it
+; too). VBS databases' own map.ini files start with it as well.
+MAP_MARKER  := "# Created by Virtual Building Supply"
 
 ; Fabrication versions to register the configuration with: 4 years back to
 ; 2 years ahead of the current year (same range as the original script).
@@ -58,10 +67,12 @@ YEAR_FROM := A_YYYY - 4
 YEAR_TO   := A_YYYY + 2
 
 ; The database is the folder this script is run from.
-; If there's no map.ini here, FABconfig asks for the database folder at start-up.
-DB_DIR  := FileExist(A_ScriptDir "\map.ini") ? A_ScriptDir : ""
+; If there's no map.ini here (or this is a configuration folder),
+; FABconfig asks for the database folder at start-up.
+DB_DIR  := IsDatabaseFolder(A_ScriptDir) && FileExist(A_ScriptDir "\map.ini") ? A_ScriptDir : ""
 DB_PATH := StrReplace(DB_DIR, "\", "/")   ; map.ini uses forward slashes
-DB_NAME := DB_DIR != "" ? IniRead(DB_DIR "\map.ini", "COMPANY-INFO", "DBNAME", "") : ""
+; [COMPANY-INFO] DBNAME is optional; without it the name starts blank.
+DB_NAME := DB_DIR != "" ? Trim(IniRead(DB_DIR "\map.ini", "COMPANY-INFO", "DBNAME", "")) : ""
 NO_DB_TEXT := "No database selected. Click Browse to choose one."
 
 ;======================= VBS brand palette ==========================
@@ -176,7 +187,7 @@ ctl.NameLbl := AddCtl("Text", "Background" CLR_CARD, "Configuration name")
 fName := MakeField(DB_NAME)
 SetF("s9 c" CLR_MUTED)
 ctl.LocLbl := AddCtl("Text", "Background" CLR_CARD, "Configuration location")
-fLoc := MakeField(DB_NAME != "" ? CONFIG_ROOT "\" DB_NAME : "")
+fLoc := MakeField(CONFIG_ROOT "\" DB_NAME)   ; just the root if there's no DBNAME
 btnBrowse := MakeButton(0xE838, "Browse", CLR_GREEN_TINT, CLR_GREEN_TINT2, CLR_GREEN_DARK, BrowseLocation)
 SetF("s9 c" CLR_MUTED)
 ctl.DbLbl := AddCtl("Text", "Background" CLR_CARD, "Fabrication database folder")
@@ -525,8 +536,43 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
 }
 
 ;======================= Database folder ============================
-; A folder counts as a Fabrication database if it has a map.ini or a DATABASE folder.
-IsDatabaseFolder(dir) => FileExist(dir "\map.ini") || DirExist(dir "\DATABASE")
+; A folder counts as a Fabrication database if it has a map.ini or a DATABASE
+; folder, and isn't a configuration folder.
+IsDatabaseFolder(dir) => (FileExist(dir "\map.ini") || DirExist(dir "\DATABASE")) && !IsConfigFolder(dir)
+
+; A configuration folder's map.ini points Main at a database somewhere else;
+; a database's own map.ini points Main at itself (usually "."). The first-line
+; marker can't tell them apart: VBS databases have it too.
+IsConfigFolder(dir) {
+    if !FileExist(dir "\map.ini")
+        return false
+    main := Trim(IniRead(dir "\map.ini", "PROGRAM PATHS", "Main", ""))
+    if (main = "")
+        return false
+    main := StrReplace(main, "/", "\")
+    if !RegExMatch(main, "^([A-Za-z]:|\\\\)")   ; relative to the map.ini's folder
+        main := dir "\" main
+    return RTrim(FullPath(main), "\") != RTrim(FullPath(dir), "\")
+}
+
+; Resolves "." and ".." in a path.
+FullPath(p) {
+    buf := Buffer(32768 * 2)
+    n := DllCall("GetFullPathNameW", "str", p, "uint", 32768, "ptr", buf, "ptr", 0, "uint")
+    return n ? StrGet(buf) : p
+}
+
+; True if FABconfig wrote this folder's map.ini. Only meaningful for a
+; configuration folder, since VBS databases have the same first line.
+HasMarker(dir) {
+    try {
+        f := FileOpen(dir "\map.ini", "r")   ; detects a UTF-8/UTF-16 BOM
+        line := f.ReadLine()
+        f.Close()
+        return InStr(line, MAP_MARKER) = 1
+    }
+    return false
+}
 
 ChooseDatabase(*) {
     start := DB_DIR != "" ? "*" DB_DIR : ""
@@ -540,8 +586,11 @@ ChooseDatabase(*) {
             SetDatabase(sel)
             return true
         }
-        if MsgBox("This folder doesn't look like a Fabrication database (it has no map.ini or DATABASE folder):`n"
-                . sel "`n`nChoose a different folder?", APP_NAME, "RetryCancel Icon!") != "Retry"
+        if IsConfigFolder(sel)
+            why := "This is a Fabrication configuration folder, not a database. Its map.ini points to a database somewhere else:`n"
+        else
+            why := "This folder doesn't look like a Fabrication database (it has no map.ini or DATABASE folder):`n"
+        if MsgBox(why sel "`n`nChoose a different folder?", APP_NAME, "RetryCancel Icon!") != "Retry"
             return false
         start := "*" sel
     }
@@ -549,7 +598,7 @@ ChooseDatabase(*) {
 
 SetDatabase(dir) {
     global DB_DIR := dir, DB_PATH := StrReplace(dir, "\", "/")
-    global DB_NAME := IniRead(dir "\map.ini", "COMPANY-INFO", "DBNAME", "")
+    global DB_NAME := Trim(IniRead(dir "\map.ini", "COMPANY-INFO", "DBNAME", ""))
     fDb.Edit.Text := dir
     ; Fill in the name from the database, unless the user already typed one.
     if (Trim(ctl.Name.Value) = "" && DB_NAME != "") {
@@ -566,7 +615,7 @@ OnNameChange(*) {
         return
     name := Trim(ctl.Name.Value)
     settingLoc := true
-    ctl.Loc.Value := (name != "") ? CONFIG_ROOT "\" name : ""
+    ctl.Loc.Value := CONFIG_ROOT "\" name   ; just the root while the name is blank
     settingLoc := false
 }
 
@@ -608,36 +657,45 @@ SaveConfig(*) {
         return Fail(ctl.Loc, "The configuration location must be a full path, like`n" CONFIG_ROOT "\" name)
     if (dir = DB_DIR) || InStr(DB_DIR "\", dir "\") = 1
         return Fail(ctl.Loc, "The configuration location can't be the database folder or a folder that contains it.")
+    if InStr(dir "\", DB_DIR "\") = 1
+        return Fail(ctl.Loc, "The configuration location can't be inside the database folder. Choose a folder outside it, like`n" CONFIG_ROOT "\" name)
 
-    ; ---- Confirm before replacing anything ----
-    existing := ""
-    Loop (YEAR_TO - YEAR_FROM + 1) {
-        try {
-            p := RegRead(RegKey(YEAR_FROM + A_Index - 1, name), "Path")
-            if (p != "" && RTrim(p, "\") != dir) {
-                existing := p
+    ; ---- Confirm before overwriting an existing configuration ----
+    years := FabYears()
+    found := FindConfig(name, years)
+    if found.Years.Length {
+        msg := 'A configuration named "' name '" already exists.`n`n'
+            . "Registered with: Fabrication " JoinList(found.Years) "`n"
+            . "Location:`n" JoinList(found.Paths, "`n") "`n"
+        for p in found.Paths
+            if FileExist(p "\map.ini") && !HasMarker(p) {
+                msg .= "`nIt wasn't made by FABconfig, so it may have been set up by hand.`n"
                 break
             }
-        }
-    }
-    if (existing != "") {
-        if MsgBox('A configuration named "' name '" already exists and points to:`n' existing
-                . "`n`nReplace it with the new location?", APP_NAME, "YesNo Icon! Default2") != "Yes"
+        if (found.Paths.Length > 1 || found.Paths[1] != dir)
+            msg .= "`nIt will point to the new location instead:`n" dir "`nThe old folder is left as it is.`n"
+        else if FileExist(dir "\map.ini")
+            msg .= "`nThe current map.ini will be kept as map.ini.bak.`n"
+        if MsgBox(msg "`nOverwrite it?", APP_NAME, "YesNo Icon! Default2") != "Yes"
             return
     } else if FileExist(dir "\map.ini") {
         if MsgBox("This folder already has a map.ini:`n" dir
-                . "`n`nReplace it?", APP_NAME, "YesNo Icon? Default2") != "Yes"
+                . "`n`nOverwrite it? The current one will be kept as map.ini.bak.", APP_NAME, "YesNo Icon! Default2") != "Yes"
             return
     }
 
     ; ---- Create folder and files ----
     try {
         DirCreate(dir)
+        ; Only the files we replace need to be writable.
+        try FileSetAttrib("-R", dir "\config.png")
+        try FileSetAttrib("-R", dir "\map.ini")
+        try FileSetAttrib("-R", dir "\map.ini.bak")
         if FileExist(DB_DIR "\config.png")
             FileCopy(DB_DIR "\config.png", dir "\config.png", 1)
-        try FileSetAttrib("-R", dir "\*", "FR")
+        ; Keep the previous map.ini (one level of backup).
         if FileExist(dir "\map.ini")
-            FileDelete(dir "\map.ini")
+            FileMove(dir "\map.ini", dir "\map.ini.bak", 1)
         FileAppend(MapIniText(), dir "\map.ini", "CP0 `n")
     } catch as err {
         MsgBox("Couldn't write the configuration files in`n" dir "`n`n" err.Message, APP_NAME, "Icon!")
@@ -645,17 +703,61 @@ SaveConfig(*) {
     }
 
     ; ---- Register with Fabrication ----
+    ; Every year in the range, plus any other installed year it was already
+    ; registered with, so an overwrite doesn't leave old entries behind.
     try {
-        Loop (YEAR_TO - YEAR_FROM + 1)
-            RegWrite(dir, "REG_SZ", RegKey(YEAR_FROM + A_Index - 1, name), "Path")
+        for year in years
+            RegWrite(dir, "REG_SZ", RegKey(year, name), "Path")
     } catch as err {
         MsgBox("The files were created, but registering the configuration failed:`n`n" err.Message, APP_NAME, "Icon!")
         return
     }
 
-    MsgBox('Configuration "' name '" added.`n`nIt will appear in the configuration list the next time you start Fabrication.'
+    done := found.Years.Length ? "updated" : "added"
+    MsgBox('Configuration "' name '" ' done '.`n`nIt will appear in the configuration list the next time you start Fabrication.'
         , APP_NAME, "Iconi")
     ExitApp()
+}
+
+; The Fabrication years to check and register: the YEAR_FROM-YEAR_TO range
+; plus any other "Fabrication <year>" key already in the registry.
+; Map keys are integers, so a for-loop returns them in order.
+FabYears() {
+    years := Map()
+    Loop (YEAR_TO - YEAR_FROM + 1)
+        years[YEAR_FROM + A_Index - 1] := true
+    try {
+        Loop Reg, "HKCU\Software\Autodesk", "K"
+            if RegExMatch(A_LoopRegName, "^Fabrication (\d{4})$", &m)
+                years[Integer(m[1])] := true
+    }
+    return years
+}
+
+; Which of those years have a configuration with this name, and the
+; (distinct) folders they point to.
+FindConfig(name, years) {
+    found := {Years: [], Paths: []}
+    seen := Map()
+    seen.CaseSense := "Off"
+    for year in years {
+        p := RTrim(RegRead(RegKey(year, name), "Path", ""), "\")
+        if (p = "")
+            continue
+        found.Years.Push(year)
+        if !seen.Has(p) {
+            seen[p] := true
+            found.Paths.Push(p)
+        }
+    }
+    return found
+}
+
+JoinList(items, sep := ", ") {
+    out := ""
+    for i, item in items
+        out .= (i > 1 ? sep : "") item
+    return out
 }
 
 Fail(edt, message) {

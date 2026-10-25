@@ -14,9 +14,9 @@ No administrator rights are needed. FABconfig writes only to the current user's 
 
 ## How to use it
 
-1. Copy `FABconfig_v26_10_24.ahk` (or the compiled `.exe`) and the `Resources` folder into the root folder of the Fabrication database.
-2. Run it. The configuration name is filled in from `DBNAME` in the `[COMPANY-INFO]` section of the database's `map.ini`, if there is one.
-3. Check the name and location, then click **Create Configuration** (or press Enter).
+1. Copy `FABconfig.ahk` (or the compiled `.exe`) and the `Resources` folder into the root folder of the Fabrication database, next to its `map.ini`. You can also run FABconfig from anywhere else: if there's no `map.ini` in its folder, it asks you to choose the database folder when it starts.
+2. The configuration name is filled in from `DBNAME` in the `[COMPANY-INFO]` section of the database's `map.ini`, if there is one. If there isn't, type a name; the location still starts at `C:\fabrication-configurations\` and follows the name.
+3. Check the name, location and database folder, then click **Create Configuration** (or press Enter). Use the **Browse** button beside the database folder to pick a different database.
 4. Start Fabrication. The new configuration appears in the configuration list.
 
 The **What's this?** page in the sidebar explains each step inside the program. Esc returns from that page, or closes the program from the main page.
@@ -26,7 +26,7 @@ The **What's this?** page in the sidebar explains each step inside the program. 
 - **Configuration folder:** Created at `C:\fabrication-configurations\<name>` by default. The location follows the name as you type, until you edit it or choose a folder with **Browse**.
 - **map.ini:** Written to the configuration folder. It points the `Database`, `Items`, `Images`, `Profiles`, `Reports` and `Scripts` paths at the shared database. `Projects`, DXFs, `Blocks` and `Backup` stay in the configuration folder, so each user's local work stays separate from the shared database. Its first line, `# Created by Virtual Building Supply, LLC`, marks the configuration as made by FABconfig.
 - **config.png:** Copied from the database folder into the configuration folder, if present. Fabrication shows this picture in its configuration list.
-- **Registry:** For each Fabrication version from four years before the current year to two years after it, writes the configuration folder to the `Path` value under
+- **Registry:** For each Fabrication version from four years before the current year to two years after it (and any other version the configuration was already registered with), writes the configuration folder to the `Path` value under
   `HKEY_CURRENT_USER\Software\Autodesk\Fabrication <year>\Configuration\<name>`.
 
 Nothing in the database folder itself is changed. Running FABconfig again with the same name updates that configuration.
@@ -34,8 +34,9 @@ Nothing in the database folder itself is changed. Running FABconfig again with t
 ### Safety checks
 
 - The name can't contain characters Windows doesn't allow in folder names.
-- The configuration folder must be a full path, and can't be the database folder or a folder that contains it.
-- If a configuration with the same name already points to a different folder, or the chosen folder already has a `map.ini`, FABconfig asks before replacing anything.
+- The configuration folder must be a full path, and can't be the database folder, a folder that contains it, or a folder inside it. (A folder inside the database would also be deleted by tools that mirror the database, such as `robocopy /MIR`.)
+- A database folder must contain a `map.ini` or a `DATABASE` folder, and can't be a configuration folder (one whose `map.ini` points to a database somewhere else). If you pick one that doesn't qualify, FABconfig asks you to choose again.
+- If a configuration with the same name already exists, FABconfig shows which Fabrication versions it's registered with and where it points (and warns if it wasn't made by FABconfig), then asks before overwriting it. It checks every Fabrication version in the registry, not just the range above, and an overwrite updates all of them. If the name is new but the chosen folder already has a `map.ini`, it asks before overwriting that too. Whenever it overwrites a `map.ini`, the previous one is kept next to it as `map.ini.bak` (only the most recent one is kept).
 - If any file can't be written or any registry entry can't be saved, FABconfig says so instead of reporting success.
 
 ### Removing a configuration
@@ -48,17 +49,29 @@ To remove a configuration by hand, delete its `Configuration\<name>` key under e
 2. Right-click the script and choose **Compile Script**. If that option isn't there, open **AutoHotkey Dash** and choose **Compile**, which installs the compiler (Ahk2Exe) the first time.
 3. Choose a **v2** base file (for example `AutoHotkey64.exe`) and click **Convert**.
 
-The icon, version and copyright details come from the `;@Ahk2Exe-` lines at the top of the script. The sidebar logo is loaded from the `Resources` folder at runtime, so keep that folder next to the `.exe`. If it's missing, FABconfig shows a plain folder icon instead.
+The compiled file is named after the version, for example `FABconfig_v26.10.24.exe`, and is saved next to the script. The icon, version and copyright details come from the `;@Ahk2Exe-` lines in the script; the version is copied from `APP_VERSION`, so there's nothing else to update. These lines need a recent version of Ahk2Exe. The sidebar logo is loaded from the `Resources` folder at runtime, so keep that folder next to the `.exe`. If it's missing, FABconfig shows a plain folder icon instead.
 
 Some antivirus tools are wary of unsigned `.exe` files compiled from AutoHotkey. Signing the `.exe` with a code-signing certificate avoids this.
+
+## Versions and releases
+
+Versions are dates in the form `vYY.MM.DD` (for example `v26.10.24`). A second release on the same day adds a fourth number: `v26.10.24.1`. The version is shown in the sidebar and in the `.exe`'s file properties.
+
+The script keeps the same file name from version to version; past versions are in the git history and on the [Releases](../../releases) page. To make a release:
+
+1. Set `APP_VERSION` near the top of `FABconfig.ahk`. This is the only place the version is written.
+2. Move the **Unreleased** notes in [CHANGELOG.md](CHANGELOG.md) under a heading for the new version.
+3. Compile the `.exe` (see above), commit, and tag the commit with the version: `git tag v26.10.24`, then `git push --tags`.
+4. Create a GitHub release from the tag, paste in its changelog notes, and attach the `.exe` and a zip of the `Resources` folder.
 
 ## Repository layout
 
 ```
-FABconfig_v26_10_24.ahk   The program
+FABconfig.ahk             The program
 Resources/                VBS logo files (not covered by the GPL, see below)
   VBS_Logo.ico            Window, taskbar and .exe icon
   VBS_Logo_Badge.png      Logo shown in the sidebar
+CHANGELOG.md              What changed in each version
 LICENSE                   GNU General Public License v3
 README.md                 This file
 ```
@@ -78,4 +91,4 @@ Additional terms under section 7 of the GPL v3, also stated in the script's head
 - **Attribution (section 7b):** The copyright notice and author attribution in the script's header must be preserved in that file and in any modified version of it.
 - **Trademarks (section 7e):** The license grants no rights to use the trade names, trademarks or logos of Virtual Building Supply, LLC, including the logo files in the `Resources` folder. If you distribute a modified version, replace those files with your own (or remove them) and change the program's branding. FABconfig runs without them; to compile without an icon, remove the `;@Ahk2Exe-SetMainIcon` line.
 
-Autodesk, Fabrication, CADmep, ESTmep and CAMduct are registered trademarks or trademarks of Autodesk, Inc. FABconfig is not affiliated with, endorsed by or supported by Autodesk.
+Autodesk, Revit, Fabrication, CADmep, ESTmep and CAMduct are registered trademarks or trademarks of Autodesk, Inc. FABconfig is not affiliated with, endorsed by or supported by Autodesk.
