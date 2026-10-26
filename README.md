@@ -2,6 +2,8 @@
 
 FABconfig adds an Autodesk Fabrication database to Fabrication (Revit, CADmep, ESTmep, CAMduct) as a named configuration, so the database appears in Fabrication's configuration list at start-up. It creates the configuration folder, writes a `map.ini` that points back to the shared database, and registers the configuration with each recent Fabrication version, all in one click.
 
+![FABconfig's main window, with the configuration name, location and database folder, and the Fabrication versions it registers with](docs/screenshot.png)
+
 FABconfig is written in [AutoHotkey v2](https://www.autohotkey.com/) and can be run as a script or compiled into a standalone `.exe`. It is developed by Virtual Building Supply, LLC and released under the GNU General Public License v3.
 
 ## Requirements
@@ -77,6 +79,8 @@ FABconfig.ahk             The program
 Resources/                VBS logo files (not covered by the GPL, see below)
   VBS_Logo.ico            Window, taskbar and .exe icon
   VBS_Logo_Badge.png      Logo shown in the sidebar
+docs/
+  screenshot.png          Screenshot of the main window, shown above
 CHANGELOG.md              What changed in each version
 LICENSE                   GNU General Public License v3
 README.md                 This file
