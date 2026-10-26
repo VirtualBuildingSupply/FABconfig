@@ -13,6 +13,7 @@ What changed in each version of FABconfig. Versions are dates (`vYY.MM.DD`); see
 - The compiled `.exe` has the sidebar logo built in, so it no longer needs the `Resources` folder next to it.
 
 ### Changed
+- The window is 20% wider, so long configuration and database paths fit.
 - The configuration location can't be inside the database folder. (Tools that mirror the database, such as `robocopy /MIR`, would delete it.)
 - A configuration folder (one whose `map.ini` points to a database somewhere else) is no longer accepted as a database folder.
 - Only `map.ini` and `config.png` have their read-only flag cleared, instead of every file in the configuration folder.

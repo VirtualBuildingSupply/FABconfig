@@ -251,7 +251,7 @@ aboutCtrls.Push(ctl.ACard, ctl.ABody)
 
 ;======================= Show window ================================
 MonitorGetWorkArea(MonitorGetPrimary(), &waL, &waT, &waR, &waB)
-winW := Min(S(920), waR - waL - S(40))
+winW := Min(S(1104), waR - waL - S(40))
 winH := Min(S(560), waB - waT - S(60))
 g.Opt("+MinSize" winW "x" winH)
 
